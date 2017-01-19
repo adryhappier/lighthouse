@@ -127,39 +127,68 @@ describe('Runner', () => {
       });
   });
 
-  it('outputs an error audit result when missing a required artifact', () => {
-    const url = 'https://example.com';
+  describe('Bad required artifact handling', () => {
+    it('outputs an error audit result when trace required but not provided', () => {
+      const url = 'https://example.com';
+      const config = new Config({
+        audits: [
+          // requires traces[Audit.DEFAULT_PASS]
+          'user-timings'
+        ],
+        artifacts: {
+          traces: {}
+        }
+      });
 
-    const config = new Config({
-      audits: [
-        // requires the HTTPS artifact
-        'is-on-https'
-      ],
-
-      artifacts: {}
+      return Runner.run({}, {url, config}).then(results => {
+        assert.equal(results.audits['user-timings'].rawValue, -1);
+        assert.ok(results.audits['user-timings'].debugString);
+      });
     });
 
-    return Runner.run({}, {url, config}).then(results => {
-      assert.equal(results.audits['is-on-https'].rawValue, -1);
-      assert.ok(results.audits['is-on-https'].debugString);
-    });
-  });
+    it('outputs an error audit result when missing a required artifact', () => {
+      const url = 'https://example.com';
+      const config = new Config({
+        audits: [
+          // requires the HTTPS artifact
+          'is-on-https'
+        ],
 
-  it('outputs an error audit result when trace required but not provided', () => {
-    const url = 'https://example.com';
-    const config = new Config({
-      audits: [
-        // requires traces[Audit.DEFAULT_PASS]
-        'user-timings'
-      ],
-      artifacts: {
-        traces: {}
-      }
+        artifacts: {}
+      });
+
+      return Runner.run({}, {url, config}).then(results => {
+        assert.equal(results.audits['is-on-https'].rawValue, -1);
+        assert.ok(results.audits['is-on-https'].debugString);
+      });
     });
 
-    return Runner.run({}, {url, config}).then(results => {
-      assert.equal(results.audits['user-timings'].rawValue, -1);
-      assert.ok(results.audits['user-timings'].debugString);
+    it('outputs an error audit result when required artifact was an Error', () => {
+      const url = 'https://example.com';
+
+      const config = new Config({
+        audits: [
+          'is-on-https'
+        ],
+
+        artifacts: {
+          HTTPS: {
+            value: true
+          }
+        }
+      });
+
+      // Error objects don't make it through the Config constructor, so replace
+      // artifact with error now.
+      const errorMessage = 'blurst of times';
+      const artifactError = new Error(errorMessage);
+      artifactError.recoverable = true;
+      config.artifacts.HTTPS = artifactError;
+
+      return Runner.run({}, {url, config}).then(results => {
+        assert.equal(results.audits['is-on-https'].rawValue, -1);
+        assert.equal(results.audits['is-on-https'].debugString, errorMessage);
+      });
     });
   });
 
