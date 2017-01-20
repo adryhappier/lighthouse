@@ -118,17 +118,6 @@ describe('Best Practices: unused css rules audit', () => {
   });
 
   describe('#audit', () => {
-    it('fails when gatherers failed', () => {
-      const result = UnusedCSSAudit.audit({
-        URL: {finalUrl: ''},
-        CSSUsage: {rawValue: -1, debugString: 'It errored'},
-        Styles: []
-      });
-
-      assert.equal(result.debugString, 'It errored');
-      assert.equal(result.rawValue, -1);
-    });
-
     it('passes when rules are used', () => {
       const result = UnusedCSSAudit.audit({
         URL: {finalUrl: ''},
