@@ -57,6 +57,12 @@ describe('Page uses optimized images', () => {
     });
 
     assert.equal(auditResult.rawValue, false);
+    assert.equal(auditResult.extendedInfo.value.table.headings.length,
+                 auditResult.extendedInfo.value.table.rows[0].cols.length,
+                 'number table headings matches number data columns');
+    assert.deepEqual(auditResult.extendedInfo.value.table.headings,
+                     ['URL', 'Original (KB)', 'WebP savings', 'JPEG savings'],
+                     'table headings are correct and in order');
   });
 
   it('fails when one png image is highly unoptimized', () => {
@@ -103,7 +109,7 @@ describe('Page uses optimized images', () => {
       OptimizedImages: [image],
     });
 
-    const actualUrl = auditResult.extendedInfo.value[0].url;
+    const actualUrl = auditResult.extendedInfo.value.results[0].url;
     assert.ok(actualUrl.length < image.url.length, `${actualUrl} >= ${image.url}`);
   });
 

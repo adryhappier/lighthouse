@@ -103,12 +103,10 @@ class UsesOptimizedImages extends Audit {
 
       totalWastedBytes += webpSavings.bytes;
       results.push({
-        cols: [
-          url,
-          `${originalKb} KB`,
-          `${webpSavings ? webpSavings.percent + '%' : ''}`,
-          `${jpegSavings ? jpegSavings.percent + '%' : ''}`
-        ]
+        url,
+        total: `${originalKb} KB`,
+        webpSavings: `${webpSavings ? webpSavings.percent + '%' : ''}`,
+        jpegSavings: `${jpegSavings ? jpegSavings.percent + '%' : ''}`
       });
       return results;
     }, []);
@@ -124,6 +122,16 @@ class UsesOptimizedImages extends Audit {
       debugString = `Lighthouse was unable to decode some of your images: ${urls.join(', ')}`;
     }
 
+    const createTable = Formatter.getByName(
+        Formatter.SUPPORTED_FORMATS.TABLE).createTable;
+
+    const table = createTable({
+      url: 'URL',
+      total: 'Original (KB)',
+      webpSavings: 'WebP savings',
+      jpegSavings: 'JPEG savings'
+    }, results);
+
     return UsesOptimizedImages.generateAuditResult({
       displayValue,
       debugString,
@@ -131,8 +139,8 @@ class UsesOptimizedImages extends Audit {
       extendedInfo: {
         formatter: Formatter.SUPPORTED_FORMATS.TABLE,
         value: {
-          headings: ['URL', 'Original (KB)', 'WebP savings', 'JPEG savings'],
-          rows: results
+          results,
+          table
         }
       }
     });

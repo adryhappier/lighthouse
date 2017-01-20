@@ -27,12 +27,16 @@ class Table extends Formatter {
     switch (type) {
       case 'pretty':
         return result => {
-          if (!Array.isArray(result.headings) || !Array.isArray(result.rows)) {
+          if (!result) {
+            return '';
+          }
+          if (!result.table || !Array.isArray(result.table.headings) ||
+              !Array.isArray(result.table.rows)) {
             return '';
           }
 
           let output = '';
-          result.rows.forEach(row => {
+          result.table.rows.forEach(row => {
             output += '      ';
             row.cols.forEach(col => {
               // Omit code snippet cols.
@@ -53,6 +57,35 @@ class Table extends Formatter {
       default:
         throw new Error('Unknown formatter type');
     }
+  }
+
+  /**
+   * Preps a formatted table (headings/col vals) for output.
+   * @param {!Object<string, string>} headings
+   * @param {!Array<*>} results Audit results.
+   * @return {!{headings: string, rows: [{cols: [*]}]}} headings
+   */
+  static createTable(headings, results) {
+    const headingKeys = Object.keys(headings);
+
+    const rows = results.map(result => {
+      const cols = headingKeys.map(key => {
+        switch (key) {
+          case 'code':
+            return '`' + result[key].trim() + '`';
+          case 'lineCol':
+            return `${result.line}:${result.col}`;
+          default:
+            return result[key];
+        }
+      });
+
+      return {cols};
+    });
+
+    headings = headingKeys.map(key => headings[key]);
+
+    return {headings, rows};
   }
 }
 

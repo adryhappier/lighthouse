@@ -58,10 +58,8 @@ class UsesHTTP2Audit extends Audit {
       return sameHost && notH2;
     }).map(record => {
       return {
-        cols: [
-          record.url,
-          record.protocol
-        ]
+        protocol: record.protocol,
+        url: record.url // .url is a getter and not copied over for the assign.
       };
     });
 
@@ -72,14 +70,17 @@ class UsesHTTP2Audit extends Audit {
       displayValue = `${resources.length} request was not handled over h2`;
     }
 
+    const createTable = Formatter.getByName(
+        Formatter.SUPPORTED_FORMATS.TABLE).createTable;
+
     return UsesHTTP2Audit.generateAuditResult({
       rawValue: resources.length === 0,
       displayValue: displayValue,
       extendedInfo: {
         formatter: Formatter.SUPPORTED_FORMATS.TABLE,
         value: {
-          headings: ['URL', 'Protocol'],
-          rows: resources
+          table: createTable({url: 'URL', protocol: 'Protocol'}, resources),
+          results: resources
         }
       }
     });
