@@ -41,6 +41,9 @@ const _flatten = arr => [].concat(...arr);
  * @param {!Promise}
  */
 function enableOtherChromeExtensions(enable) {
+  const str = enable ? 'enabling' : 'disabling';
+  log.warn('Chrome', `${str} ${installedExtensions.length} extensions.`);
+
   return new Promise(resolve => {
     let remaining = installedExtensions.length;
     installedExtensions.forEach(info => {
@@ -147,28 +150,16 @@ window.runLighthouseForConnection = function(connection, url, options, requested
   lighthouseIsRunning = true;
   updateBadgeUI(url);
 
-  return enableOtherChromeExtensions(false)
-      .then(_ => Runner.run(connection, runOptions)) // Run Lighthouse.
+  return Runner.run(connection, runOptions) // Run Lighthouse.
       .then(result => {
         lighthouseIsRunning = false;
         updateBadgeUI();
         filterOutArtifacts(result);
-
-        // Deliver results even if enabling extensions fails.
-        enableOtherChromeExtensions(true).catch(err => {
-          log.warn('Chrome', `Could not disable some extensions. ${err.message}`);
-        });
-
         return result;
       })
       .catch(err => {
         lighthouseIsRunning = false;
         updateBadgeUI();
-
-        enableOtherChromeExtensions(true).catch(err => {
-          log.warn('Chrome', `Could not enable/disable some extensions. ${err.message}`);
-        });
-
         throw err;
       });
 };
@@ -182,11 +173,22 @@ window.runLighthouseInExtension = function(options, requestedAggregations) {
   // Default to 'info' logging level.
   log.setLevel('info');
   const connection = new ExtensionProtocol();
-  return connection.getCurrentTabURL()
+  return enableOtherChromeExtensions(false)
+    .then(_ => connection.getCurrentTabURL())
     .then(url => window.runLighthouseForConnection(connection, url, options, requestedAggregations))
     .then(results => {
+      // Deliver results even if enabling extensions fails.
+      enableOtherChromeExtensions(true).catch(err => {
+        log.warn('Chrome', `Could not enable some extensions. ${err.message}`);
+      });
+
       const blobURL = window.createReportPageAsBlob(results, 'extension');
       chrome.tabs.create({url: blobURL});
+    }).catch(err => {
+      enableOtherChromeExtensions(true).catch(err => {
+        log.warn('Chrome', `Could not enable/disable some extensions. ${err.message}`);
+      });
+      throw err;
     });
 };
 
@@ -311,18 +313,19 @@ window.isRunning = function() {
   return lighthouseIsRunning;
 };
 
-// Get list of installed extensions that are enabled and can be disabled.
-// Extensions are not allowed to be disabled if they are under an admin policy.
-chrome.management.getAll(installs => {
-  chrome.management.getSelf(lighthouseCrxInfo => {
-    installedExtensions = installs.filter(info => {
-      return info.id !== lighthouseCrxInfo.id && info.type === 'extension' &&
-             info.enabled && info.mayDisable;
+// Run when in extension context, but not in devtools.
+if (window.chrome && chrome.runtime) {
+  // Get list of installed extensions that are enabled and can be disabled.
+  // Extensions are not allowed to be disabled if they are under an admin policy.
+  chrome.management.getAll(installs => {
+    chrome.management.getSelf(lighthouseCrxInfo => {
+      installedExtensions = installs.filter(info => {
+        return info.id !== lighthouseCrxInfo.id && info.type === 'extension' &&
+               info.enabled && info.mayDisable;
+      });
     });
   });
-});
 
-if (window.chrome && chrome.runtime) {
   chrome.runtime.onInstalled.addListener(details => {
     if (details.previousVersion) {
       // eslint-disable-next-line no-console
