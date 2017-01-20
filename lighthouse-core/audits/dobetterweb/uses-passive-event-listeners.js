@@ -80,11 +80,39 @@ class PassiveEventsAudit extends Audit {
 
     const groupedResults = EventHelpers.groupCodeSnippetsByLocation(results);
 
+    function createTable(headings, results) {
+      const rows = results.map(result => {
+        const keys = Object.keys(headings);
+
+        const arr = [];
+        keys.forEach(key => {
+          switch (key) {
+            case 'code':
+              arr.push('`' + result[key].trim() + '`');
+              break;
+            case 'lineCol':
+              arr.push(`${result.line}:${result.col}`);
+              break;
+            default:
+              arr.push(result[key]);
+          }
+        });
+        return {cols: arr};
+      });
+
+      return {
+        headings: Object.keys(headings).map(key => headings[key]),
+        rows
+      };
+    }
+
     return PassiveEventsAudit.generateAuditResult({
       rawValue: groupedResults.length === 0,
       extendedInfo: {
-        formatter: Formatter.SUPPORTED_FORMATS.URLLIST,
-        value: groupedResults
+        formatter: Formatter.SUPPORTED_FORMATS.TABLE,
+        value: createTable({
+          url: 'URL', lineCol: 'Line/Col', type: 'Type', code: 'Snippet'
+        }, groupedResults)
       },
       debugString
     });

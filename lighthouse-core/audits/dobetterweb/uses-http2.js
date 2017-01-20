@@ -58,8 +58,10 @@ class UsesHTTP2Audit extends Audit {
       return sameHost && notH2;
     }).map(record => {
       return {
-        label: record.protocol,
-        url: record.url // .url is a getter and not copied over for the assign.
+        cols: [
+          record.url,
+          record.protocol
+        ]
       };
     });
 
@@ -74,8 +76,11 @@ class UsesHTTP2Audit extends Audit {
       rawValue: resources.length === 0,
       displayValue: displayValue,
       extendedInfo: {
-        formatter: Formatter.SUPPORTED_FORMATS.URLLIST,
-        value: resources
+        formatter: Formatter.SUPPORTED_FORMATS.TABLE,
+        value: {
+          headings: ['URL', 'Protocol'],
+          rows: resources
+        }
       }
     });
   }
