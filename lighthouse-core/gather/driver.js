@@ -24,7 +24,7 @@ const URL = require('../lib/url-shim');
 
 const log = require('../lib/log.js');
 
-const MAX_WAIT_FOR_FULLY_LOADED = 25 * 1000;
+const MAX_WAIT_FOR_FULLY_LOADED = 100 * 1000;
 const PAUSE_AFTER_LOAD = 500;
 
 class Driver {

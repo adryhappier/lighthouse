@@ -16,7 +16,7 @@
  */
 
  /**
-  * @fileoverview Gathers all image tags used on the page with their src, size,
+  * @fileoverview Gathers all images used on the page with their src, size,
   *   and attribute information. Executes script in the context of the page.
   */
 'use strict';
@@ -26,7 +26,7 @@ const Gatherer = require('./gatherer');
 /* global window, document, Image */
 
 /* istanbul ignore next */
-function collectImageTagInfo() {
+function collectImageElementInfo() {
   function parseSrcsetUrls(srcset) {
     if (!srcset) {
       return [];
@@ -41,36 +41,33 @@ function collectImageTagInfo() {
     });
   }
 
-  function toObject(tag) {
+  function getElementInfo(element) {
     return {
-      tagName: tag.tagName,
-      src: tag.currentSrc,
-      srcset: tag.srcset,
-      srcsetUrls: parseSrcsetUrls(tag.srcset),
-      sizes: tag.sizes,
-      media: tag.media,
-      clientWidth: tag.clientWidth,
-      clientHeight: tag.clientHeight,
-      naturalWidth: tag.naturalWidth,
-      naturalHeight: tag.naturalHeight,
+      tagName: element.tagName,
+      src: element.currentSrc,
+      srcset: element.srcset,
+      srcsetUrls: parseSrcsetUrls(element.srcset),
+      sizes: element.sizes,
+      media: element.media,
+      clientWidth: element.clientWidth,
+      clientHeight: element.clientHeight,
+      naturalWidth: element.naturalWidth,
+      naturalHeight: element.naturalHeight,
     };
   }
 
-  return [...document.querySelectorAll('img')].map(tag => {
-    if (tag.parentElement.tagName !== 'PICTURE') {
-      return Object.assign(toObject(tag), {isPicture: false});
+  return [...document.querySelectorAll('img')].map(element => {
+    if (element.parentElement.tagName !== 'PICTURE') {
+      return Object.assign(getElementInfo(element), {isPicture: false});
     }
 
-    // `img` tags within `picture` behave strangely
-    // The picture's width and height are reflected by the img tag's width
-    // and height but the natural size is not necessarily accurate.
-    const imgTagInfo = toObject(tag);
-    const sources = [...tag.parentElement.children]
-        .filter(tag => tag.tagName === 'SOURCE')
-        .filter(tag => !tag.media || window.matchMedia(tag.media).matches)
-        .map(toObject)
-        .concat(imgTagInfo);
-    return Object.assign(imgTagInfo, {
+    const imgElementInfo = getElementInfo(element);
+    const sources = [...element.parentElement.children]
+        .filter(element => element.tagName === 'SOURCE')
+        .filter(element => !element.media || window.matchMedia(element.media).matches)
+        .map(getElementInfo)
+        .concat(imgElementInfo);
+    return Object.assign(imgElementInfo, {
       isPicture: true,
       // nested chain is too deep for DevTools to handle so stringify
       sources: JSON.stringify(sources),
@@ -94,25 +91,17 @@ function determineNaturalSize(url) {
   });
 }
 
-function pick(obj, keys) {
-  const out = {};
-  for (const key of keys) {
-    out[key] = obj[key];
-  }
-  return out;
-}
-
 class ImageUsage extends Gatherer {
 
   /**
-   * @param {!{src: string}} tag
-   * @return {Promise<!Object>}
+   * @param {{src: string}} element
+   * @return {!Promise<!Object>}
    */
-  fetchTagWithSizeInformation(tag) {
-    const url = JSON.stringify(tag.src);
+  fetchElementWithSizeInformation(element) {
+    const url = JSON.stringify(element.src);
     return this.driver.evaluateAsync(`(${determineNaturalSize.toString()})(${url})`)
       .then(size => {
-        return Object.assign(tag, size);
+        return Object.assign(element, size);
       });
   }
 
@@ -120,29 +109,39 @@ class ImageUsage extends Gatherer {
     const driver = this.driver = options.driver;
     const indexedNetworkRecords = traceData.networkRecords.reduce((map, record) => {
       if (/^image/.test(record._mimeType)) {
-        map[record._url] = pick(record, [
-          'url', 'requestHeaders', 'resourceSize',
-          'startTime', 'endTime',
-        ]);
+        map[record._url] = {
+          url: record.url,
+          resourceSize: record.resourceSize,
+          startTime: record.startTime,
+          endTime: record.endTime,
+          responseReceivedTime: record.responseReceivedTime
+        };
       }
 
       return map;
     }, {});
 
-    return driver.evaluateAsync(`(${collectImageTagInfo.toString()})()`)
-      .then(tags => {
-        return Promise.all(tags.map(tag => {
-          // rehydrate the sources property
-          tag.sources = tag.sources && JSON.parse(tag.sources);
+    return driver.evaluateAsync(`(${collectImageElementInfo.toString()})()`)
+      .then(elements => {
+        return elements.reduce((promise, element) => {
+          return promise.then(collector => {
+            // rehydrate the sources property
+            element.sources = element.sources && JSON.parse(element.sources);
+            // link up the image with its network record
+            element.networkRecord = indexedNetworkRecords[element.src];
 
-          // link up the image tag with its network record
-          tag.networkRecord = indexedNetworkRecords[tag.src];
+            // Images within `picture` behave strangely and natural size information
+            // isn't accurate. Try to get the actual size if we can.
+            const elementPromise = element.isPicture && element.networkRecord ?
+                this.fetchElementWithSizeInformation(element) :
+                Promise.resolve(element);
 
-          // fill in natural size information if we can
-          return tag.isPicture && tag.networkRecord ?
-              this.fetchTagWithSizeInformation(tag) :
-              Promise.resolve(tag);
-        }));
+            return elementPromise.then(element => {
+              collector.push(element);
+              return collector;
+            });
+          });
+        }, Promise.resolve([]));
       });
   }
 }

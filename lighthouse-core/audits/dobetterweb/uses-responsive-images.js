@@ -49,7 +49,7 @@ class UsesResponsiveImages extends Audit {
 
   /**
    * @param {!Object} image
-   * @param {number} DPR
+   * @param {number} DPR devicePixelRatio
    * @return {?Object}
    */
   static computeWaste(image, DPR) {
@@ -57,26 +57,27 @@ class UsesResponsiveImages extends Audit {
     const actualPixels = image.naturalWidth * image.naturalHeight;
     const usedPixels = image.clientWidth * image.clientHeight;
     const usedPixelsFullDPR = usedPixels * Math.pow(DPR, 2);
-    const usedRatio = usedPixels / actualPixels;
-    const usedRatioFullDPR = usedPixelsFullDPR / actualPixels;
+    const wastedRatio = 1 - (usedPixels / actualPixels);
+    const wastedRatioFullDPR = 1 - (usedPixelsFullDPR / actualPixels);
 
-    if (!usedRatio || usedRatio >= 1) {
+    if (wastedRatio <= 0) {
       // Image did not have sufficient resolution to fill display at DPR=1
       return null;
     }
 
+    // TODO(phulce): use an average transfer time for data URI images
     const size = image.networkRecord.resourceSize;
     const transferTimeInMs = 1000 * (image.networkRecord.endTime -
-        image.networkRecord.startTime);
-    const wastedBytes = Math.round(size * (1 - usedRatio));
-    const wastedTime = Math.round(transferTimeInMs * (1 - usedRatio));
-    const percentSavings = Math.round(100 * (1 - usedRatio));
+        image.networkRecord.responseReceivedTime);
+    const wastedBytes = Math.round(size * wastedRatio);
+    const wastedTime = Math.round(transferTimeInMs * wastedRatio);
+    const percentSavings = Math.round(100 * wastedRatio);
     const label = `${Math.round(size / KB_IN_BYTES)}KB total, ${percentSavings}% savings`;
 
     return {
       wastedBytes,
       wastedTime,
-      isWasteful: usedRatioFullDPR < 1 - WASTEFUL_THRESHOLD_AS_RATIO,
+      isWasteful: wastedRatioFullDPR > WASTEFUL_THRESHOLD_AS_RATIO,
       result: {url, label},
     };
   }
@@ -89,15 +90,7 @@ class UsesResponsiveImages extends Audit {
     const images = artifacts.ImageUsage;
     const contentWidth = artifacts.ContentWidth;
 
-    if (images.rawValue === -1) {
-      return UsesResponsiveImages.generateAuditResult(images);
-    } else if (contentWidth.devicePixelRatio <= 0) {
-      return UsesResponsiveImages.generateAuditResult({
-        rawValue: -1,
-        debuString: 'ContentWidth gatherer failed to determine devicePixelRatio'
-      });
-    }
-
+    let debugString;
     let totalWastedBytes = 0;
     let totalWastedTime = 0;
     let hasWastefulImage = false;
@@ -126,6 +119,7 @@ class UsesResponsiveImages extends Audit {
     }
 
     return UsesResponsiveImages.generateAuditResult({
+      debugString,
       displayValue,
       rawValue: !hasWastefulImage,
       extendedInfo: {
