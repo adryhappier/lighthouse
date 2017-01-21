@@ -61,7 +61,8 @@ class Table extends Formatter {
 
   /**
    * Preps a formatted table (headings/col vals) for output.
-   * @param {!Object<string, string>} headings
+   * @param {!Object<string, string>} headings for the table. The order of this
+   *     object's key/value will be the order of the table's headings.
    * @param {!Array<*>} results Audit results.
    * @return {!{headings: string, rows: [{cols: [*]}]}} headings
    */
@@ -72,8 +73,10 @@ class Table extends Formatter {
       const cols = headingKeys.map(key => {
         switch (key) {
           case 'code':
+            // Wrap code snippets in markdown ticks.
             return '`' + result[key].trim() + '`';
           case 'lineCol':
+            // Create a combined line/col numbers for the lineCol key.
             return `${result.line}:${result.col}`;
           default:
             return result[key];
