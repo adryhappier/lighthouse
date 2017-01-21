@@ -89,7 +89,7 @@ class ReportGenerator {
     // !value
     Handlebars.registerHelper('not', value => !value);
 
-    // value != value2
+    // value !== value2
     Handlebars.registerHelper('if_not_eq', function(lhs, rhs, options) {
       if (lhs !== rhs) {
         // eslint-disable-next-line no-invalid-this
