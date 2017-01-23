@@ -44,17 +44,11 @@ function enableOtherChromeExtensions(enable) {
   const str = enable ? 'enabling' : 'disabling';
   log.warn('Chrome', `${str} ${installedExtensions.length} extensions.`);
 
-  return new Promise(resolve => {
-    let remaining = installedExtensions.length;
-    installedExtensions.forEach(info => {
-      chrome.management.setEnabled(info.id, enable, _ => {
-        remaining -= 1;
-        if (!remaining) {
-          resolve();
-        }
-      });
+  return Promise.all(installedExtensions.map(info => {
+    return new Promise(resolve => {
+      chrome.management.setEnabled(info.id, enable, resolve);
     });
-  });
+  }));
 }
 
 /**
