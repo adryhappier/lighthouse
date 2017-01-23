@@ -72,7 +72,7 @@ class UsesResponsiveImages extends Audit {
     const wastedBytes = Math.round(size * wastedRatio);
     const wastedTime = Math.round(transferTimeInMs * wastedRatio);
     const percentSavings = Math.round(100 * wastedRatio);
-    const label = `${Math.round(size / KB_IN_BYTES)}KB total, ${percentSavings}% savings`;
+    const label = `${Math.round(size / KB_IN_BYTES)}KB total, ${percentSavings}% potential savings`;
 
     return {
       wastedBytes,

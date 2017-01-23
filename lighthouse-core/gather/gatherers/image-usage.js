@@ -23,7 +23,7 @@
 
 const Gatherer = require('./gatherer');
 
-/* global window, document, Image */
+/* global window, document, Image, URL */
 
 /* istanbul ignore next */
 function collectImageElementInfo() {
@@ -35,15 +35,23 @@ function collectImageElementInfo() {
     const entries = srcset.split(',');
     const relativeUrls = entries.map(entry => entry.trim().split(' ')[0]);
     return relativeUrls.map(url => {
-      const a = document.createElement('a');
-      a.href = url;
-      return a.href;
+      try {
+        return new URL(url, window.location.href).href;
+      } catch (e) {
+        return url;
+      }
     });
   }
 
+  /**
+   * @param {!HTMLImageElement|HTMLSourceElement} element
+   * @return {!Object}
+   */
   function getElementInfo(element) {
     return {
       tagName: element.tagName,
+      // currentSrc used over src to get the url as determined by the browser
+      // after taking into account srcset/media/sizes/etc.
       src: element.currentSrc,
       srcset: element.srcset,
       srcsetUrls: parseSrcsetUrls(element.srcset),
@@ -57,11 +65,11 @@ function collectImageElementInfo() {
   }
 
   return [...document.querySelectorAll('img')].map(element => {
+    const imgElementInfo = getElementInfo(element);
     if (element.parentElement.tagName !== 'PICTURE') {
-      return Object.assign(getElementInfo(element), {isPicture: false});
+      return Object.assign(imgElementInfo, {isPicture: false});
     }
 
-    const imgElementInfo = getElementInfo(element);
     const sources = [...element.parentElement.children]
         .filter(element => element.tagName === 'SOURCE')
         .filter(element => !element.media || window.matchMedia(element.media).matches)
