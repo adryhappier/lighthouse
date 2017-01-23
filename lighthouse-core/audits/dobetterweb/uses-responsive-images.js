@@ -40,7 +40,8 @@ class UsesResponsiveImages extends Audit {
       category: 'Images',
       name: 'uses-responsive-images',
       description: 'Site uses appropriate image sizes',
-      helpText: 'Image sizes served should be based on the display size to save network bytes. ' +
+      helpText:
+        'Image sizes served should be based on the device display size to save network bytes. ' +
         'Learn more about [responsive images](https://developers.google.com/web/fundamentals/design-and-ui/media/images) ' +
         'and [client hints](https://developers.google.com/web/updates/2015/09/automating-resource-selection-with-client-hints).',
       requiredArtifacts: ['ImageUsage', 'ContentWidth']

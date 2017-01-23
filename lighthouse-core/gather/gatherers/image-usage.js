@@ -36,7 +36,7 @@ function collectImageElementInfo() {
     const relativeUrls = entries.map(entry => entry.trim().split(' ')[0]);
     return relativeUrls.map(url => {
       try {
-        return new URL(url, window.location.href).href;
+        return new URL(url, document.baseURI || window.location.href).href;
       } catch (e) {
         return url;
       }
