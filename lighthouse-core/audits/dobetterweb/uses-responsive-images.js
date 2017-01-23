@@ -61,7 +61,9 @@ class UsesResponsiveImages extends Audit {
     const wastedRatio = 1 - (usedPixels / actualPixels);
     const wastedRatioFullDPR = 1 - (usedPixelsFullDPR / actualPixels);
 
-    if (wastedRatio <= 0) {
+    if (!Number.isFinite(wastedRatio)) {
+      return new Error(`Invalid image sizing information ${url}`);
+    } else if (wastedRatio <= 0) {
       // Image did not have sufficient resolution to fill display at DPR=1
       return null;
     }
@@ -104,6 +106,9 @@ class UsesResponsiveImages extends Audit {
       const processed = UsesResponsiveImages.computeWaste(image, DPR);
       if (!processed) {
         return results;
+      } else if (processed instanceof Error) {
+        debugString = processed.message;
+        return results;
       }
 
       hasWastefulImage = hasWastefulImage || processed.isWasteful;
@@ -116,7 +121,7 @@ class UsesResponsiveImages extends Audit {
     let displayValue;
     if (results.length) {
       const totalWastedKB = Math.round(totalWastedBytes / KB_IN_BYTES);
-      displayValue = `${totalWastedKB}KB waste took ${totalWastedTime}ms`;
+      displayValue = `${totalWastedKB}KB potential waste took ~${totalWastedTime}ms`;
     }
 
     return UsesResponsiveImages.generateAuditResult({
