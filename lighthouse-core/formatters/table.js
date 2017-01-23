@@ -64,7 +64,7 @@ class Table extends Formatter {
    * @param {!Object<string, string>} headings for the table. The order of this
    *     object's key/value will be the order of the table's headings.
    * @param {!Array<*>} results Audit results.
-   * @return {!{headings: string, rows: [{cols: [*]}]}} headings
+   * @return {{headings: Array<string>, rows: [{cols: [*]}]}} headings
    */
   static createTable(headings, results) {
     const headingKeys = Object.keys(headings);

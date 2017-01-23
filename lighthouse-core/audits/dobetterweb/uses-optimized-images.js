@@ -93,11 +93,12 @@ class UsesOptimizedImages extends Audit {
         hasAllEfficientImages = false;
       }
 
-      let jpegSavings;
+      let jpegSavingsLabel;
       if (/(jpeg|bmp)/.test(image.mimeType)) {
-        jpegSavings = UsesOptimizedImages.computeSavings(image, 'jpeg');
+        const jpegSavings = UsesOptimizedImages.computeSavings(image, 'jpeg');
         if (jpegSavings.bytes > 0) {
           hasAllEfficientImages = false;
+          jpegSavingsLabel = `${jpegSavings.percent}%`;
         }
       }
 
@@ -105,8 +106,8 @@ class UsesOptimizedImages extends Audit {
       results.push({
         url,
         total: `${originalKb} KB`,
-        webpSavings: `${webpSavings ? webpSavings.percent + '%' : ''}`,
-        jpegSavings: `${jpegSavings ? jpegSavings.percent + '%' : ''}`
+        webpSavings: `${webpSavings.percent}%`,
+        jpegSavings: jpegSavingsLabel
       });
       return results;
     }, []);
