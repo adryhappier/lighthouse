@@ -42,11 +42,16 @@ const _flatten = arr => [].concat(...arr);
  */
 function enableOtherChromeExtensions(enable) {
   const str = enable ? 'enabling' : 'disabling';
-  log.warn('Chrome', `${str} ${installedExtensions.length} extensions.`);
+  log.log('Chrome', `${str} ${installedExtensions.length} extensions.`);
 
   return Promise.all(installedExtensions.map(info => {
-    return new Promise(resolve => {
-      chrome.management.setEnabled(info.id, enable, resolve);
+    return new Promise((resolve, reject) => {
+      chrome.management.setEnabled(info.id, enable, _ => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        }
+        resolve();
+      });
     });
   }));
 }
@@ -145,17 +150,17 @@ window.runLighthouseForConnection = function(connection, url, options, requested
   updateBadgeUI(url);
 
   return Runner.run(connection, runOptions) // Run Lighthouse.
-      .then(result => {
-        lighthouseIsRunning = false;
-        updateBadgeUI();
-        filterOutArtifacts(result);
-        return result;
-      })
-      .catch(err => {
-        lighthouseIsRunning = false;
-        updateBadgeUI();
-        throw err;
-      });
+    .then(result => {
+      lighthouseIsRunning = false;
+      updateBadgeUI();
+      filterOutArtifacts(result);
+      return result;
+    })
+    .catch(err => {
+      lighthouseIsRunning = false;
+      updateBadgeUI();
+      throw err;
+    });
 };
 
 /**
@@ -171,17 +176,11 @@ window.runLighthouseInExtension = function(options, requestedAggregations) {
     .then(_ => connection.getCurrentTabURL())
     .then(url => window.runLighthouseForConnection(connection, url, options, requestedAggregations))
     .then(results => {
-      // Deliver results even if enabling extensions fails.
-      enableOtherChromeExtensions(true).catch(err => {
-        log.warn('Chrome', `Could not enable some extensions. ${err.message}`);
-      });
-
+      enableOtherChromeExtensions(true);
       const blobURL = window.createReportPageAsBlob(results, 'extension');
       chrome.tabs.create({url: blobURL});
     }).catch(err => {
-      enableOtherChromeExtensions(true).catch(err => {
-        log.warn('Chrome', `Could not enable/disable some extensions. ${err.message}`);
-      });
+      enableOtherChromeExtensions(true);
       throw err;
     });
 };
