@@ -80,20 +80,13 @@ class PassiveEventsAudit extends Audit {
 
     const groupedResults = EventHelpers.groupCodeSnippetsByLocation(results);
 
-    const createTable = Formatter.getByName(
-        Formatter.SUPPORTED_FORMATS.TABLE).createTable;
-
-    const table = createTable({
-      url: 'URL', lineCol: 'Line/Col', type: 'Type', code: 'Snippet'
-    }, groupedResults);
-
     return PassiveEventsAudit.generateAuditResult({
       rawValue: groupedResults.length === 0,
       extendedInfo: {
         formatter: Formatter.SUPPORTED_FORMATS.TABLE,
         value: {
           results: groupedResults,
-          table
+          tableHeadings: {url: 'URL', lineCol: 'Line/Col', type: 'Type', code: 'Snippet'}
         }
       },
       debugString

@@ -123,16 +123,6 @@ class UsesOptimizedImages extends Audit {
       debugString = `Lighthouse was unable to decode some of your images: ${urls.join(', ')}`;
     }
 
-    const createTable = Formatter.getByName(
-        Formatter.SUPPORTED_FORMATS.TABLE).createTable;
-
-    const table = createTable({
-      url: 'URL',
-      total: 'Original (KB)',
-      webpSavings: 'WebP savings',
-      jpegSavings: 'JPEG savings'
-    }, results);
-
     return UsesOptimizedImages.generateAuditResult({
       displayValue,
       debugString,
@@ -141,7 +131,12 @@ class UsesOptimizedImages extends Audit {
         formatter: Formatter.SUPPORTED_FORMATS.TABLE,
         value: {
           results,
-          table
+          tableHeadings: {
+            url: 'URL',
+            total: 'Original (KB)',
+            webpSavings: 'WebP savings',
+            jpegSavings: 'JPEG savings'
+          }
         }
       }
     });

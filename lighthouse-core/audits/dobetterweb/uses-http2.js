@@ -70,17 +70,14 @@ class UsesHTTP2Audit extends Audit {
       displayValue = `${resources.length} request was not handled over h2`;
     }
 
-    const createTable = Formatter.getByName(
-        Formatter.SUPPORTED_FORMATS.TABLE).createTable;
-
     return UsesHTTP2Audit.generateAuditResult({
       rawValue: resources.length === 0,
       displayValue: displayValue,
       extendedInfo: {
         formatter: Formatter.SUPPORTED_FORMATS.TABLE,
         value: {
-          table: createTable({url: 'URL', protocol: 'Protocol'}, resources),
-          results: resources
+          results: resources,
+          tableHeadings: {url: 'URL', protocol: 'Protocol'}
         }
       }
     });

@@ -57,10 +57,9 @@ describe('Page uses optimized images', () => {
     });
 
     assert.equal(auditResult.rawValue, false);
-    assert.equal(auditResult.extendedInfo.value.table.headings.length,
-                 auditResult.extendedInfo.value.table.rows[0].cols.length,
-                 'number table headings matches number data columns');
-    assert.deepEqual(auditResult.extendedInfo.value.table.headings,
+
+    const headings = auditResult.extendedInfo.value.tableHeadings;
+    assert.deepEqual(Object.keys(headings).map(key => headings[key]),
                      ['URL', 'Original (KB)', 'WebP savings', 'JPEG savings'],
                      'table headings are correct and in order');
   });

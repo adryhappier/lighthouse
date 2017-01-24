@@ -44,18 +44,20 @@
 }
 </style>
 
-{{#if table.rows}}
+{{#createTable tableHeadings results }}
+
+{{#if rows}}
 <details class="subitem__details">
   <summary class="subitem__detail">More information</summary>
-  <table class="table_list {{#if_not_eq table.headings.length 2}}multicolumn{{/if_not_eq}}"
+  <table class="table_list {{#if_not_eq headings.length 2}}multicolumn{{/if_not_eq}}"
          cellspacing="0">
     <thead>
       <tr>
-        {{#each table.headings}}<th>{{this}}</th>{{/each}}
+        {{#each headings}}<th>{{this}}</th>{{/each}}
       </tr>
     </thead>
     <tbody>
-      {{#each table.rows}}
+      {{#each rows}}
         <tr>
           {{#each cols}}
             <td>{{ sanitize this}}</td>
@@ -66,3 +68,5 @@
   </table>
 </details>
 {{/if}}
+
+{{/createTable}}

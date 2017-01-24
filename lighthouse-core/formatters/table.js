@@ -27,16 +27,15 @@ class Table extends Formatter {
     switch (type) {
       case 'pretty':
         return result => {
-          if (!result) {
-            return '';
-          }
-          if (!result.table || !Array.isArray(result.table.headings) ||
-              !Array.isArray(result.table.rows)) {
-            return '';
+          let output = '';
+
+          if (!result || !result.results || !result.tableHeadings) {
+            return output;
           }
 
-          let output = '';
-          result.table.rows.forEach(row => {
+          const table = Table.createTable(result.tableHeadings, result.results);
+
+          table.rows.forEach(row => {
             output += '      ';
             row.cols.forEach(col => {
               // Omit code snippet cols.
@@ -61,22 +60,28 @@ class Table extends Formatter {
 
   /**
    * Preps a formatted table (headings/col vals) for output.
-   * @param {!Object<string, string>} headings for the table. The order of this
-   *     object's key/value will be the order of the table's headings.
-   * @param {!Array<*>} results Audit results.
-   * @return {{headings: Array<string>, rows: [{cols: [*]}]}} headings
+   * @param {!Object<string>} headings for the table. The order of this
+   *     object's key/value pairs determines the order of the HTML table headings.
+   *     There is special handling for certain keys:
+   *       code: wraps the value in ticks as a markdown code snippet.
+   *       lineCol: combines the values for the line and col keys into a single
+   *                value "line/col".
+   *       All other values are passed through as is.
+   * @param {!Array<!Object>} results Audit results.
+   * @return {{headings: !Array<string>, rows: !Array<{cols: !Array<*>}>}}
    */
   static createTable(headings, results) {
+    headings = headings || {};
+    results = results || [];
+
     const headingKeys = Object.keys(headings);
 
     const rows = results.map(result => {
       const cols = headingKeys.map(key => {
         switch (key) {
           case 'code':
-            // Wrap code snippets in markdown ticks.
             return '`' + result[key].trim() + '`';
           case 'lineCol':
-            // Create a combined line/col numbers for the lineCol key.
             return `${result.line}:${result.col}`;
           default:
             return result[key];
@@ -89,6 +94,14 @@ class Table extends Formatter {
     headings = headingKeys.map(key => headings[key]);
 
     return {headings, rows};
+  }
+
+  static getHelpers() {
+    return {
+      createTable(headings, results, opts) {
+        return opts.fn(Table.createTable(headings, results));
+      }
+    };
   }
 }
 

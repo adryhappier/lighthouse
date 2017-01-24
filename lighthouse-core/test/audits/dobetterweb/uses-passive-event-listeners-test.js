@@ -54,10 +54,8 @@ describe('Page uses passive events listeners where applicable', () => {
     assert.equal(auditResult.extendedInfo.value.results[0].url, fixtureData[0].url);
     assert.ok(auditResult.extendedInfo.value.results[0].code.match(/addEventListener/));
 
-    assert.equal(auditResult.extendedInfo.value.table.headings.length,
-                 auditResult.extendedInfo.value.table.rows[0].cols.length,
-                 'number table headings matches number data columns');
-    assert.deepEqual(auditResult.extendedInfo.value.table.headings,
+    const headings = auditResult.extendedInfo.value.tableHeadings;
+    assert.deepEqual(Object.keys(headings).map(key => headings[key]),
                      ['URL', 'Line/Col', 'Type', 'Snippet'],
                      'table headings are correct and in order');
   });

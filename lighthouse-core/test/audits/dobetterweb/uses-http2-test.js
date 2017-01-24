@@ -34,10 +34,8 @@ describe('Resources are fetched over http/2', () => {
     assert.ok(auditResult.displayValue.match('4 requests were not'));
     assert.equal(auditResult.extendedInfo.value.results.length, 4);
 
-    assert.equal(auditResult.extendedInfo.value.table.headings.length,
-                 auditResult.extendedInfo.value.table.rows[0].cols.length,
-                 'number table headings matches number data columns');
-    assert.deepEqual(auditResult.extendedInfo.value.table.headings,
+    const headings = auditResult.extendedInfo.value.tableHeadings;
+    assert.deepEqual(Object.keys(headings).map(key => headings[key]),
                      ['URL', 'Protocol'], 'table headings are correct and in order');
   });
 
